@@ -1,4 +1,3 @@
-import os
 import pandas as pd
 import numpy as np
 import nltk
@@ -17,17 +16,8 @@ nltk.download("punkt_tab")
 nltk.download("averaged_perceptron_tagger_eng")
 
 
-def main():
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "data",
-            "raw",
-            "fake_job_postings.csv",
-        )
-    )
+def main(input_path, output_dir):
+    df = pd.read_csv(f"{input_path}/fake_job_postings.csv")
 
     print(df.head())
     df = df.replace(np.nan, "", regex=True)
@@ -118,7 +108,7 @@ def main():
     df["salary_range"] = (salary_min + salary_max) / 2
     df["salary_range"] = df["salary_range"].fillna(-1)
 
-    df[["text", "fraudulent"]].to_csv("preprocessed_text_labels.csv", index=False)
+    df[["text", "fraudulent"]].to_csv(f"{output_dir}/preprocessed_text_labels.csv", index=False)
 
 
 if __name__ == "__main__":

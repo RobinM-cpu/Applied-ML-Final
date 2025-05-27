@@ -1,4 +1,3 @@
-import os
 import re
 import pandas as pd
 import numpy as np
@@ -6,17 +5,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 
 
-def main():
-    df = pd.read_csv(
-        os.path.join(
-            os.path.dirname(__file__),
-            "..",
-            "..",
-            "data",
-            "raw",
-            "fake_job_postings.csv",
-        )
-    )
+def main(input_path, output_dir):
+    df = pd.read_csv(f"{input_path}/fake_job_postings.csv")
     df = df.replace(np.nan, "", regex=True)
 
     df["location"] = df["location"].str.split(",").str[0]
@@ -87,10 +77,10 @@ def main():
     print(classes_dictionary)
 
     pd.DataFrame({"text": X_train, "label": y_train}).to_csv(
-        "train_bert.csv", index=False
+        f"{output_dir}/train_bert.csv", index=False
     )
-    pd.DataFrame({"text": X_val, "label": y_val}).to_csv("val_bert.csv", index=False)
-    pd.DataFrame({"text": X_test, "label": y_test}).to_csv("test_bert.csv", index=False)
+    pd.DataFrame({"text": X_val, "label": y_val}).to_csv(f"{output_dir}/val_bert.csv", index=False)
+    pd.DataFrame({"text": X_test, "label": y_test}).to_csv(f"{output_dir}/test_bert.csv", index=False)
 
 
 if __name__ == "__main__":
