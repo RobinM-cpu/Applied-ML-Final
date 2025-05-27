@@ -9,15 +9,16 @@ from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import classification_report, f1_score, roc_auc_score
 from sklearn.metrics import precision_recall_curve
 from datasets import Dataset
+from transformers import create_optimizer
 
 
-id2label = {0: "FRAUD", 1: "REAL"}
-label2id = {"FRAUD": 0, "REAL": 1}
+id2label = {0: "REAL", 1: "FRAUD"}
+label2id = {"REAL": 0, "FRAUD": 1}
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 
 def preprocess_function(examples):
-    return tokenizer(examples["text"], truncation=True, padding=False)
+    return tokenizer(examples["text"], truncation=True, padding=True, max_length=512)
 
 
 def print_metrics(true, pred, probs=None):
@@ -37,7 +38,7 @@ def train_bert_model(train_df, val_df, test_df):
     tokenized_val = val_ds.map(preprocess_function, batched=True)
     tokenized_test = test_ds.map(preprocess_function, batched=True)
 
-    data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="tf")
+    # data_collator = DataCollatorWithPadding(tokenizer=tokenizer, return_tensors="tf")
 
     classes = np.unique(train_ds["label"])
     weights = compute_class_weight(
@@ -51,19 +52,31 @@ def train_bert_model(train_df, val_df, test_df):
 
     batch_size = 8
     train_tf_ds = model.prepare_tf_dataset(
-        tokenized_train, shuffle=True, batch_size=batch_size, collate_fn=data_collator
+        tokenized_train, shuffle=True, batch_size=batch_size
     )
     val_tf_ds = model.prepare_tf_dataset(
-        tokenized_val, shuffle=False, batch_size=batch_size, collate_fn=data_collator
+        tokenized_val, shuffle=False, batch_size=batch_size
     )
     test_tf_ds = model.prepare_tf_dataset(
-        tokenized_test, shuffle=False, batch_size=batch_size, collate_fn=data_collator
+        tokenized_test, shuffle=False, batch_size=batch_size
+    )
+
+    train_examples = len(train_ds)
+    steps_per_epoch = train_examples // batch_size
+    num_train_steps = steps_per_epoch * 4
+    num_warmup_steps = int(0.1 * num_train_steps)
+
+    optimizer, lr_schedule = create_optimizer(
+    init_lr=2e-5,
+    num_train_steps=num_train_steps,
+    num_warmup_steps=num_warmup_steps,
+    weight_decay_rate=0.01
     )
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=5e-5),
+        optimizer=optimizer,
         loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
-        metrics=[tf.keras.metrics.SparseCategoricalAccuracy()],
+        metrics=[tf.keras.metrics.SparseCategoricalAccuracy(name="accuracy")],
     )
 
     early_stop = tf.keras.callbacks.EarlyStopping(
@@ -94,6 +107,9 @@ def train_bert_model(train_df, val_df, test_df):
 
     y_pred = (probs >= best_thresh).astype(int)
     print_metrics(y_true, y_pred, probs)
+
+    model.save_pretrained("text_fraud_model")
+    tokenizer.save_pretrained("text_fraud_model")
 
 
 def main():

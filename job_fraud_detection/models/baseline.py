@@ -30,6 +30,7 @@ def train_baseline_model(df):
     class_weights = dict(zip(classes, weights))
     print(class_weights)
 
+
     vectorizer = TfidfVectorizer(ngram_range=(1, 2))
     train_tfidf = vectorizer.fit_transform(X_train)
     val_tfidf = vectorizer.transform(X_val)
@@ -83,3 +84,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

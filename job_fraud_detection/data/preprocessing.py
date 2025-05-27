@@ -14,7 +14,15 @@ from nltk import pos_tag, word_tokenize
 nltk.download("punkt")
 nltk.download("punkt_tab")
 nltk.download("averaged_perceptron_tagger_eng")
+from langdetect import detect
+from langdetect.lang_detect_exception import LangDetectException
+import unicodedata
 
+def detect_desc_lang(text):
+    try:
+        return detect(text)
+    except LangDetectException:
+        return "unknown"
 
 def main(input_path, output_dir):
     df = pd.read_csv(f"{input_path}/fake_job_postings.csv")
@@ -24,6 +32,10 @@ def main(input_path, output_dir):
 
     edited_location = df["location"].str.split(",").str[0]
     df["location"] = edited_location.values
+
+    df["desc_lang"] = df["description"].apply(detect_desc_lang)
+
+    df = df[df["desc_lang"] == "en"]
 
     df["text"] = (
         df["title"]
@@ -53,6 +65,22 @@ def main(input_path, output_dir):
 
     df["text"] = df["text"].str.lower()
     df["text"] = df["text"].str.replace(r"[^\w\s]", " ", regex=True)
+
+    def non_latin_ratio(text):
+        if not isinstance(text, str):
+            return 1.0
+
+        total = len(text)
+        if total == 0:
+            return 1.0
+
+        latin_count = sum(
+            1 for c in text
+            if 'LATIN' in unicodedata.name(c, '') or c.isdigit() or c in " []()-_.:,"
+        )
+        return 1 - (latin_count / total)
+
+    df["non_latin_ratio"] = df["text"].apply(non_latin_ratio)
 
     def remove_stopword(sentence):
         words = sentence.split()
@@ -109,7 +137,9 @@ def main(input_path, output_dir):
     df["salary_range"] = df["salary_range"].fillna(-1)
 
     df[["text", "fraudulent"]].to_csv(f"{output_dir}/preprocessed_text_labels.csv", index=False)
-
+    print(f"Number of lines after preprocessing: {len(df)}")
 
 if __name__ == "__main__":
-    main()
+    input_path = "data/raw"
+    output_dir = "data/processed"
+    main(input_path, output_dir)
