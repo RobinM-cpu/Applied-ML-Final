@@ -34,3 +34,11 @@ Our repo:
     3rd line: -H 'accept: application/json' \
     4th line: -d '' -w "\n"
 
+3) have the following dependencies installed:
+    - fastapi
+    - uvicorn
+    - pydantic
+    - sklearn
+    - pandas
+    - numpy
+    - nltk

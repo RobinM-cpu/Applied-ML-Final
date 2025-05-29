@@ -59,7 +59,10 @@ async def prediction(title: str = " ", description: str = " ",
                      required_education: str = " ", industry: str = " ",
                      function: str = " ", salary_range: str = " "):
 
-    if not bool(re.fullmatch(r"\d+-\d+", salary_range.strip())):
+    if salary_range == " ":
+        pass
+
+    elif not bool(re.fullmatch(r"\d+-\d+", salary_range.strip())):
         raise HTTPException(status_code=400, detail="Salary range must be in the format [lower-end]-[higher-end].")
 
     model_input = ModelInput(job_id=0, title=title, description=description,
