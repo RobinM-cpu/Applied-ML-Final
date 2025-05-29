@@ -33,12 +33,4 @@ Our repo:
     2nd line: 'url/predict?**A**=%20&**B**' \
     3rd line: -H 'accept: application/json' \
     4th line: -d '' -w "\n"
-
-3) have the following dependencies installed:
-    - fastapi
-    - uvicorn
-    - pydantic
-    - sklearn
-    - pandas
-    - numpy
-    - nltk
+3) necessary dependencies are found in requirements.txt
