@@ -1,6 +1,9 @@
 import pandas as pd
 import numpy as np
 import nltk
+from langdetect import detect
+from langdetect.lang_detect_exception import LangDetectException
+import unicodedata
 
 nltk.download("stopwords")
 from nltk.corpus import stopwords
@@ -27,11 +30,37 @@ def read_user_input(data: dict) -> pd.DataFrame:
     return pd.DataFrame([data])
 
 
+def detect_desc_lang(text):
+    try:
+        return detect(text)
+    except LangDetectException:
+        return "unknown"
+
+
+def non_latin_ratio(text):
+    if not isinstance(text, str):
+        return 1.0
+
+    total = len(text)
+    if total == 0:
+        return 1.0
+
+    latin_count = sum(
+        1 for c in text
+        if 'LATIN' in unicodedata.name(c, '') or c.isdigit() or c in " []()-_.:,"
+    )
+    return 1 - (latin_count / total)
+
+
 def preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     # if location contains more information than the country code
     if df["location"].astype(str).str.contains(",", na=False).any():
         edited_location = df["location"].str.split(",").str[0]
         df["location"] = edited_location.values
+
+    #removes non-english listings
+    df["desc_lang"] = df["description"].apply(detect_desc_lang)
+    df = df[df["desc_lang"] == "en"].copy()
     
     # merge text features
     df["text"] = (
@@ -63,6 +92,9 @@ def preprocessing(df: pd.DataFrame) -> pd.DataFrame:
     # decapitalize and replace
     df["text"] = df["text"].str.lower()
     df["text"] = df["text"].str.replace(r"[^\w\s]", " ", regex=True)
+
+    df["non_latin_ratio"] = df["text"].apply(non_latin_ratio)
+    df = df[df["non_latin_ratio"] <= 0.10].copy()
     
     return df
 
@@ -95,8 +127,8 @@ def lemmatizer(sentence: str) -> str:
     return " ".join(filtered)
 
 
-def remove_feature_name_row(df: pd.DataFrame) -> None:
-    df = df.drop(
+def remove_feature_name_row(df: pd.DataFrame) -> pd.DataFrame:
+    return df.drop(
         columns=[
             "job_id",
             "title",
@@ -111,6 +143,8 @@ def remove_feature_name_row(df: pd.DataFrame) -> None:
             "required_education",
             "industry",
             "function",
+            "non_latin_ratio",
+            "desc_lang"
         ]
     )
 
@@ -134,13 +168,14 @@ def main(data: dict=None, input_path: str=None, output_dir: str=None) -> None:
         df = read_csv(input_path)
     else:
         df = read_user_input(data)
+    print(df)
+
 
     df = preprocessing(df)
     df["text"] = df["text"].apply(remove_stopword)
     df["text"] = df["text"].apply(lemmatizer)
-    remove_feature_name_row(df)
-    if (df["salary_range"] != " ").all():
-        edit_salary_feature(df)
+    df = remove_feature_name_row(df)
+    print(df)
 
     if output_dir:
         save_preprocessed_csv(df, output_dir)
@@ -150,3 +185,4 @@ def main(data: dict=None, input_path: str=None, output_dir: str=None) -> None:
 
 if __name__ == "__main__":
     main(input_path="data/raw", output_dir="data/processed")
+

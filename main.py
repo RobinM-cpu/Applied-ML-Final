@@ -24,7 +24,6 @@ class ModelInput(BaseModel):
     required_education: str
     industry: str
     function: str
-    salary_range: str
 
 
 class ModelOutput(BaseModel):
@@ -57,13 +56,7 @@ async def prediction(title: str = " ", description: str = " ",
                      benefits: str = " ", employment_type: str = " ",
                      required_experience: str = " ",
                      required_education: str = " ", industry: str = " ",
-                     function: str = " ", salary_range: str = " "):
-
-    if salary_range == " ":
-        pass
-
-    elif not bool(re.fullmatch(r"\d+-\d+", salary_range.strip())):
-        raise HTTPException(status_code=400, detail="Salary range must be in the format [lower-end]-[higher-end].")
+                     function: str = " "):
 
     model_input = ModelInput(job_id=0, title=title, description=description,
                              location=location, department=department,
@@ -72,17 +65,24 @@ async def prediction(title: str = " ", description: str = " ",
                              employment_type=employment_type,
                              required_experience=required_experience,
                              required_education=required_education,
-                             industry=industry, function=function,
-                             salary_range=salary_range)
+                             industry=industry, function=function)
 
     input_dict = model_input.model_dump()
     non_job_id = {key: value for key, value in input_dict.items() if key != "job_id"}
     all_empty = all(value == " " for value in non_job_id.values())
 
     if all_empty:
-        raise HTTPException(status_code=400, detail="At least one input should be provided to make a prediction.")
+        raise HTTPException(status_code=400, detail="At least the description should be provided to make a prediction.")
 
     processed_data = preprocessing.main(input_dict)
+
+    if processed_data.empty:
+        raise HTTPException(
+            status_code=422,
+            detail="Input data was filtered out during preprocessing. "
+                "Check that your input is in English and contains valid characters."
+        )
+
     prediction = baseline.main(processed_data, user_input=True,
                                return_metrics=False)
     if prediction >= 0.5:
