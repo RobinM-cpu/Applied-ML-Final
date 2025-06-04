@@ -29,6 +29,14 @@ def print_metrics(true, pred, probs=None):
         print(f"AUC Score: {roc_auc_score(true, probs):.4f}")
 
 
+def get_class_weights(labels):
+    classes = np.unique(labels)
+    weights = compute_class_weight(
+        class_weight="balanced", classes=classes, y=labels
+    )
+    return dict(zip(classes, weights))
+
+
 def train_bert_model(train_df, val_df, test_df):
     train_ds = Dataset.from_pandas(train_df)
     val_ds = Dataset.from_pandas(val_df)
@@ -38,11 +46,7 @@ def train_bert_model(train_df, val_df, test_df):
     tokenized_val = val_ds.map(preprocess_function, batched=True)
     tokenized_test = test_ds.map(preprocess_function, batched=True)
 
-    classes = np.unique(train_ds["label"])
-    weights = compute_class_weight(
-        class_weight="balanced", classes=classes, y=train_ds["label"]
-    )
-    class_weights = dict(zip(classes, weights))
+    class_weights = get_class_weights(train_ds["label"])
 
     model = TFAutoModelForSequenceClassification.from_pretrained(
         "distilbert-base-uncased", num_labels=2, id2label=id2label, label2id=label2id
