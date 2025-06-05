@@ -40,11 +40,9 @@ def get_class_weights(labels):
 def train_bert_model(train_df, val_df, test_df):
     train_ds = Dataset.from_pandas(train_df)
     val_ds = Dataset.from_pandas(val_df)
-    test_ds = Dataset.from_pandas(test_df)
 
     tokenized_train = train_ds.map(preprocess_function, batched=True)
     tokenized_val = val_ds.map(preprocess_function, batched=True)
-    tokenized_test = test_ds.map(preprocess_function, batched=True)
 
     class_weights = get_class_weights(train_ds["label"])
 
@@ -58,9 +56,6 @@ def train_bert_model(train_df, val_df, test_df):
     )
     val_tf_ds = model.prepare_tf_dataset(
         tokenized_val, shuffle=False, batch_size=batch_size
-    )
-    test_tf_ds = model.prepare_tf_dataset(
-        tokenized_test, shuffle=False, batch_size=batch_size
     )
 
     train_examples = len(train_ds)
@@ -93,25 +88,8 @@ def train_bert_model(train_df, val_df, test_df):
         callbacks=[early_stop],
     )
 
-    print("\nEvaluating on test set:")
-    eval_loss, eval_acc = model.evaluate(test_tf_ds)
-    print(f"Test Accuracy: {eval_acc:.4f}")
-
-    pred_logits = model.predict(test_tf_ds).logits
-    probs = tf.nn.softmax(pred_logits, axis=1).numpy()[:, 1]
-    y_pred = (probs >= 0.5).astype(int)
-    y_true = test_df["label"].values
-
-    precision, recall, thresholds = precision_recall_curve(y_true, probs)
-    f1_scores = 2 * precision * recall / (precision + recall + 1e-9)
-    best_thresh = thresholds[np.argmax(f1_scores)]
-    print(f"Best Threshold for F1: {best_thresh:.4f}")
-
-    y_pred = (probs >= best_thresh).astype(int)
-    print_metrics(y_true, y_pred, probs)
-
-    model.save_pretrained("final_fraud_model")
-    tokenizer.save_pretrained("final_fraud_model")
+    model.save_pretrained("models/final_fraud_model")
+    tokenizer.save_pretrained("models/final_fraud_model")
 
 
 def main():
