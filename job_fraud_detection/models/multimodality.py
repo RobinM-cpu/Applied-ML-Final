@@ -147,4 +147,4 @@ def main(bert_path, rf_path):
 
 
 if __name__ == "__main__":
-    main(bert_path="models/saved_fraud_model", rf_path="models/rf_model.pkl")
+    main(bert_path="models/test_fraud_model", rf_path="models/rf_model.pkl")

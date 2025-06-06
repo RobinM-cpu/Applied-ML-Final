@@ -21,14 +21,6 @@ def preprocess_function(examples):
     return tokenizer(examples["text"], truncation=True, padding=True, max_length=512)
 
 
-def print_metrics(true, pred, probs=None):
-    print("\nClassification Report:")
-    print(classification_report(true, pred))
-    print(f"F1 Score: {f1_score(true, pred):.4f}")
-    if probs is not None:
-        print(f"AUC Score: {roc_auc_score(true, probs):.4f}")
-
-
 def get_class_weights(labels):
     classes = np.unique(labels)
     weights = compute_class_weight(
@@ -88,8 +80,8 @@ def train_bert_model(train_df, val_df, test_df):
         callbacks=[early_stop],
     )
 
-    model.save_pretrained("models/final_fraud_model")
-    tokenizer.save_pretrained("models/final_fraud_model")
+    model.save_pretrained("models/test_fraud_model")
+    tokenizer.save_pretrained("models/test_fraud_model")
 
 
 def main():

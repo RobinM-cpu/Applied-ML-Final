@@ -5,3 +5,4 @@ __pycache__/
 venv/
 .env
 .h5
+models/**/tf_model.h5
