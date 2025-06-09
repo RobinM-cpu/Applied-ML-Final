@@ -22,7 +22,7 @@ Our repo:
 ├───train_model_bert.py # Ignore for now; Run to train bert model
 ├───README.md
 ```
-1) to run enter folder Applied-ML-Final, and write in terminal: uvicorn main:app --reload
+1) to run the API, enter folder Applied-ML-Final, and write in terminal: uvicorn main:app --reload
 2) cURL command:
     hint:
         - url => for example http://127.0.0.1:8000
@@ -34,3 +34,5 @@ Our repo:
     3rd line: -H 'accept: application/json' \
     4th line: -d '' -w "\n"
 3) necessary dependencies are found in requirements.txt
+
+1) to run the Streamlit, write in terminal: streamlit run app/Home.py
