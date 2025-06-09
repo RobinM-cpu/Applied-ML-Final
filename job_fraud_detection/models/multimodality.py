@@ -15,6 +15,8 @@ from sklearn.metrics import (
     roc_auc_score,
     f1_score
 )
+from rf import rf_saver
+
 
 def main(bert_path, rf_path):
 
@@ -23,7 +25,7 @@ def main(bert_path, rf_path):
         bert_path
     )
 
-    rf_model = joblib.load(rf_path)
+    rf_model = rf_saver.load(name='rf_model.pkl')
 
     def preprocess_for_bert(examples):
         return tokenizer(
@@ -56,8 +58,8 @@ def main(bert_path, rf_path):
 
 
     # Random forest validation
-    X_val = np.load("data/processed/X_val.npy")
-    y_val_rf = np.load("data/processed/y_val.npy")
+    X_val = np.load("data/processed/X_val.npy", allow_pickle=True)
+    y_val_rf = np.load("data/processed/y_val.npy", allow_pickle=True)
 
     #check everything is the same
     if not np.array_equal(y_val, y_val_rf):
@@ -147,4 +149,4 @@ def main(bert_path, rf_path):
 
 
 if __name__ == "__main__":
-    main(bert_path="models/test_fraud_model", rf_path="models/rf_model.pkl")
+    main(bert_path="models/tuned_bert_model", rf_path="models/rf_model.pkl")

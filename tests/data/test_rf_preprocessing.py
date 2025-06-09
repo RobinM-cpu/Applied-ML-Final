@@ -1,9 +1,8 @@
 import sys
 import os
+from job_fraud_detection.data.multimodal_preprocess import strip_html, non_latin_ratio, clean_and_mark, detect_desc_lang
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
-from job_fraud_detection.data.multimodal_preprocess import strip_html, non_latin_ratio, clean_and_mark, detect_desc_lang
-import pandas as pd
 
 
 def test_strip_html():

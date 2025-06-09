@@ -14,6 +14,12 @@ from typing import Tuple
 import pandas as pd
 import os
 from scipy.sparse import spmatrix
+import sys
+sys.path.append('.')
+from job_fraud_detection.saver import Saver
+
+model_saver = Saver()
+vectorizer_saver = Saver()
 
 
 def data_splitting(df: pd.DataFrame) -> Tuple[pd.DataFrame]:
@@ -47,7 +53,7 @@ def vectorize(X_train: pd.DataFrame, X_val: pd.DataFrame,
     val_tfidf = vectorizer.transform(X_val)
     test_tfidf = vectorizer.transform(X_test)
 
-    return train_tfidf, val_tfidf, test_tfidf
+    return vectorizer, train_tfidf, val_tfidf, test_tfidf
 
 
 def fit(model: type[LogisticRegression], train_tfidf: spmatrix,
@@ -108,25 +114,21 @@ def main(df_user_input: pd.DataFrame=None, user_input: bool=False,
 
     X_train, X_val, X_test, y_train, y_val, y_test = data_splitting(df)
     class_weights = calculate_class_weights(y_train)
+    vectorizer, train_tfidf, val_tfidf, test_tfidf = vectorize(X_train, X_val,
+                                                               X_test)
 
     model = LogisticRegression(class_weight=class_weights, max_iter=1000)
 
-    train_tfidf, val_tfidf, test_tfidf = vectorize(X_train, X_val, X_test)
     fit(model, train_tfidf, y_train)
 
     y_val_pred = predict(model, val_tfidf)
     y_test_pred = predict(model, test_tfidf)
 
-    if return_metrics:
-        validation_set_metrics(model, y_val, y_val_pred, val_tfidf)
-        test_set_metrics(model, y_test, y_test_pred, test_tfidf)
+    validation_set_metrics(model, y_val, y_val_pred, val_tfidf)
+    test_set_metrics(model, y_test, y_test_pred, test_tfidf)
 
-    if user_input:
-        df = df_user_input
-        vectorizer = TfidfVectorizer(ngram_range=(1, 2))
-        vectorizer.fit_transform(X_train)
-        user_input_tfidf = vectorizer.transform(df['text'])
-        return predict(model, user_input_tfidf)
+    model_saver.save(model, 'log_reg_model.pkl')
+    vectorizer_saver.save(vectorizer, 'vectorizer.pkl')
 
 
 if __name__ == "__main__":

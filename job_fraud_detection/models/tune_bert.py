@@ -1,8 +1,18 @@
-import numpy as np
-import pandas as pd
 import os
 import optuna
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+import random
+
+SEED = 1
+os.environ["PYTHONHASHSEED"] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+tf.keras.utils.set_random_seed(SEED)
+tf.config.experimental.enable_op_determinism()
+
 from transformers import (
     AutoTokenizer,
     TFAutoModelForSequenceClassification,
@@ -21,11 +31,17 @@ tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 def get_class_weights(labels):
     classes = np.unique(labels)
-    weights = compute_class_weight(class_weight="balanced", classes=classes, y=labels)
+    weights = compute_class_weight(class_weight="balanced", classes=classes,
+                                   y=labels)
     return dict(zip(classes, weights))
 
 
+best_f1_so_far = -1.0
+
+
 def objective(trial):
+    global best_f1_so_far
+
     train_df = pd.read_csv(
         os.path.join(
             os.path.dirname(__file__),
@@ -50,18 +66,18 @@ def objective(trial):
     train_ds = Dataset.from_pandas(train_df)
     val_ds = Dataset.from_pandas(val_df)
 
-    learning_rate = trial.suggest_float("lr", 1e-5, 5e-5, log=True)
-    batch_size = trial.suggest_categorical("batch_size", [8, 16, 32])
-    weight_decay = trial.suggest_float("weight_decay", 0.0, 0.1)
-    epochs = trial.suggest_int("epochs", 3, 6)
-    max_length = trial.suggest_int("max_length", 64, 512, step=64)
-    warmup_proportion = trial.suggest_float("warmup_proportion", 0.05, 0.3)
-    dropout_rate = trial.suggest_float("dropout_rate", 0.1, 0.5)
+    max_length = 512
+    learning_rate = trial.suggest_float("lr", 2e-5, 3e-5, log=True)
+    batch_size = trial.suggest_categorical("batch_size", [8, 16])
+    weight_decay = trial.suggest_float("weight_decay", 0.1, 0.18)
+    epochs = trial.suggest_int("epochs", 5, 7)
+    warmup_proportion = trial.suggest_float("warmup_proportion", 0.08, 0.15)
+    dropout_rate = trial.suggest_float("dropout_rate", 0.08, 0.2)
 
     def preprocess_function(examples):
         return tokenizer(
-            examples["text"], truncation=True, padding=True, max_length=max_length
-        )
+            examples["text"], truncation=True, padding=True,
+            max_length=max_length)
 
     tokenized_train = train_ds.map(preprocess_function, batched=True)
     tokenized_val = val_ds.map(preprocess_function, batched=True)
@@ -84,6 +100,7 @@ def objective(trial):
     train_tf_ds = model.prepare_tf_dataset(
         tokenized_train, shuffle=True, batch_size=batch_size
     )
+
     val_tf_ds = model.prepare_tf_dataset(
         tokenized_val, shuffle=False, batch_size=batch_size
     )
@@ -138,34 +155,44 @@ def objective(trial):
     trial.set_user_attr("precision", precision)
     trial.set_user_attr("recall", recall)
 
+    if best_f1 > best_f1_so_far:
+        print(f"new best f1 = {best_f1:.4f} — saving model")
+        model.save_pretrained("models/tuned_bert_model")
+        tokenizer.save_pretrained("models/tuned_bert_model")
+        best_f1_so_far = best_f1
+
     return best_f1
+
+
+def save_trials(study, trial):
+
+    all_trials = [
+        {
+            **t.params,
+            "f1": t.user_attrs.get("f1"),
+            "auc": t.user_attrs.get("auc"),
+            "precision": t.user_attrs.get("precision"),
+            "recall": t.user_attrs.get("recall"),
+            "best_thresh": t.user_attrs.get("best_thresh"),
+            "value": t.value,
+        }
+        for t in study.trials
+    ]
+    all_df = pd.DataFrame(all_trials)
+
+    script_dir = os.path.dirname(__file__)
+    csv_path = os.path.join(script_dir, "all_trials5.csv")
+    all_df.to_csv(csv_path, index=False)
 
 
 def main():
     study = optuna.create_study(direction="maximize")
-    study.optimize(objective, n_trials=20)
+    study.optimize(objective, n_trials=100, callbacks=[save_trials])
 
     top_trials = study.trials_dataframe().sort_values("value", ascending=False).head(10)
     print("\nTop 10 Trials:")
     print(top_trials)
 
-    all_trials = [
-        {
-            **trial.params,
-            "f1": trial.user_attrs.get("f1"),
-            "auc": trial.user_attrs.get("auc"),
-            "precision": trial.user_attrs.get("precision"),
-            "recall": trial.user_attrs.get("recall"),
-            "best_thresh": trial.user_attrs.get("best_thresh"),
-            "value": trial.value,
-        }
-        for trial in study.trials
-    ]
-
-    all_df = pd.DataFrame(all_trials)
-    script_dir = os.path.dirname(__file__)
-    csv_path = os.path.join(script_dir, "all_trials.csv")
-    all_df.to_csv(csv_path, index=False)
     print("Best hyperparameters:", study.best_params)
 
 
