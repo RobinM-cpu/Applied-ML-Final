@@ -3,6 +3,7 @@ import numpy as np
 import pandas as pd
 import tensorflow as tf
 import joblib
+import matplotlib.pyplot as plt
 
 from transformers import (
     AutoTokenizer,
@@ -26,7 +27,6 @@ def main(bert_path, rf_path):
     )
 
     rf_model = rf_saver.load(name='rf_model.pkl')
-
     def preprocess_for_bert(examples):
         return tokenizer(
             examples["text"],
@@ -56,10 +56,22 @@ def main(bert_path, rf_path):
     best_thresh_bert_val = thresholds_b[best_idx_b]
     print(f"VAL: Best BERT threshold = {best_thresh_bert_val:.4f} (F1 = {f1_scores_b[best_idx_b]:.4f})")
 
-
     # Random forest validation
-    X_val = np.load("data/processed/X_val.npy", allow_pickle=True)
-    y_val_rf = np.load("data/processed/y_val.npy", allow_pickle=True)
+    X_val = pd.read_csv("data/processed/X_val.csv")
+    X_val = X_val.drop(columns=["text"])
+    y_val_rf = pd.read_csv("data/processed/y_val.csv").squeeze()
+    y_val_rf = y_val_rf.to_numpy()
+
+    print(y_val)
+    print(y_val_rf)
+
+    print("Length of y_val:", len(y_val))
+    print("Length of y_val_rf:", len(y_val_rf))
+
+    # 2. Get mismatch indices
+    mismatch_indices = np.where(y_val != y_val_rf)[0]
+
+    print(f"Total mismatches: {len(mismatch_indices)}")
 
     #check everything is the same
     if not np.array_equal(y_val, y_val_rf):
@@ -96,6 +108,17 @@ def main(bert_path, rf_path):
         f"fusion threshold = {best_thresh_fusion_val:.4f} "
         f"(F1 = {best_f1_fusion_val:.4f})")
 
+    plt.figure(figsize=(8, 6))
+    plt.plot(recall_f, precision_f, label=f'Fusion (F1={best_f1_fusion_val:.4f})')
+
+    plt.xlabel('Recall')
+    plt.ylabel('Precision')
+    plt.title('Precision-Recall Curve (Validation Set)')
+    plt.legend()
+    plt.grid(True)
+    plt.tight_layout()
+    plt.show()
+
    #TEST SET
     bert_test_df = pd.read_csv("data/processed/test_bert.csv")
     bert_test_ds = Dataset.from_pandas(bert_test_df)
@@ -112,8 +135,10 @@ def main(bert_path, rf_path):
     y_test = bert_test_df["label"].values
 
     # RF test
-    X_test = np.load("data/processed/X_test.npy")
-    y_test_rf = np.load("data/processed/y_test.npy")
+    X_test = pd.read_csv("data/processed/X_test.csv")
+    X_test = X_test.drop(columns=["text"])
+    y_test_rf = pd.read_csv("data/processed/y_test.csv").squeeze()
+    y_test_rf = y_test_rf.to_numpy()
 
     if not np.array_equal(y_test, y_test_rf):
         raise ValueError("Test labels for BERT and RF do not match")

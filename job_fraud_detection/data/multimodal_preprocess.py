@@ -43,6 +43,10 @@ def split_and_encode(df: pd.DataFrame):
                    "required_experience", "salary_category",
                    "function", "location"]
 
+    for col in cat_columns:
+        print(f"\nUnique values in '{col}':")
+        print(df[col].unique())
+
     X_train_raw, X_other_raw, y_train, y_other = train_test_split(df.drop(
                     columns="fraudulent"), df["fraudulent"],
                     test_size=0.3, stratify=df["fraudulent"], random_state=42)
@@ -61,6 +65,8 @@ def split_and_encode(df: pd.DataFrame):
                               index=X_train_raw.index)
     X_train = pd.concat([X_train_raw.drop(cat_columns, axis=1), one_hot_df],
                         axis=1)
+    print("Training X_train columns (after encoding):", X_train.columns.tolist())
+    print(X_train["salary_range"][:20])
 
     one_hot_encoded = enc.transform(X_val_raw[cat_columns])
     one_hot_df = pd.DataFrame(one_hot_encoded,
@@ -80,12 +86,13 @@ def split_and_encode(df: pd.DataFrame):
 
 
 def save(enc, X_train, X_val, X_test, y_train, y_val, y_test):
-    np.save("data/processed/X_train.npy", X_train)
-    np.save("data/processed/X_val.npy", X_val)
-    np.save("data/processed/X_test.npy", X_test)
-    np.save("data/processed/y_train.npy", y_train)
-    np.save("data/processed/y_val.npy", y_val)
-    np.save("data/processed/y_test.npy", y_test)
+    X_train.to_csv("data/processed/X_train.csv", index=False)
+    X_val.to_csv("data/processed/X_val.csv", index=False)
+    X_test.to_csv("data/processed/X_test.csv", index=False)
+
+    pd.DataFrame(y_train).to_csv("data/processed/y_train.csv", index=False)
+    pd.DataFrame(y_val).to_csv("data/processed/y_val.csv", index=False)
+    pd.DataFrame(y_test).to_csv("data/processed/y_test.csv", index=False)
 
     encoder_saver.save(model=enc, name='ohe_encoder.pkl')
 
@@ -99,6 +106,7 @@ def main(data=None, input_path=None, output_dir=None):
     else:
         df = read_csv(input_path)
 
+
     df = edit_salary(df)
 
     df = preprocess_dataframe(df)
@@ -107,10 +115,10 @@ def main(data=None, input_path=None, output_dir=None):
 
     df = remove_feature_name_row(df)
     
-    df = df.drop(columns="text")
-    print(df)
+    # df = df.drop(columns="text")
 
     df = df.replace("", "missing")
+
 
     if not data:
         enc, X_train, X_val, X_test, y_train, y_val, y_test = split_and_encode(df)

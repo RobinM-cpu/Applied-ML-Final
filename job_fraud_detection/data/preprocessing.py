@@ -1,5 +1,7 @@
 import pandas as pd
 import nltk
+import sys
+sys.path.append('.')
 from job_fraud_detection.data.general_preprocessing import (
                                    read_csv, read_user_input,
                                    preprocess_dataframe,

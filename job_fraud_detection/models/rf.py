@@ -1,5 +1,6 @@
 import numpy as np
 import joblib
+import pandas as pd
 import os
 from sklearn.ensemble import RandomForestClassifier
 import sys
@@ -10,9 +11,13 @@ rf_saver = Saver()
 
 
 def main(base_path):
-    X_train = np.load(os.path.join(base_path, "X_train.npy"))
+    X_train = pd.read_csv(os.path.join(base_path, "X_train.csv"))
+    y_train = pd.read_csv(os.path.join(base_path, "y_train.csv")).squeeze()
 
-    y_train = np.load(os.path.join(base_path, "y_train.npy"))
+    X_train = X_train.drop(columns=["text"])
+
+    print(X_train)
+    print(y_train)
 
     rf = RandomForestClassifier(class_weight="balanced", max_features="sqrt",
                                 criterion="gini", n_estimators=100,

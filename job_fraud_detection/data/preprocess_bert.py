@@ -7,6 +7,8 @@ from sklearn.utils.class_weight import compute_class_weight
 from transformers import AutoTokenizer
 from langdetect import detect, DetectorFactory
 from langdetect.lang_detect_exception import LangDetectException
+import sys
+sys.path.append('.')
 from job_fraud_detection.data.general_preprocessing import (read_csv,
                                                             read_user_input,
                                                             preprocess_dataframe,
