@@ -233,6 +233,9 @@ if form.form_submit_button():
     if all_empty:
         st.write("At least the description should be provided to make a "
                  "prediction.")
+    if non_job_id['description'] == ' ':
+
+        st.write("A description has to provided for a prediction to be made.")
     else:
         if chosen_model == "Logistic Regression":
             processed_data = preprocessing.main(input_dict)
@@ -316,8 +319,9 @@ if form.form_submit_button():
 
             if processed_data.empty:
                     st.write("Input data was filtered out "
-                             "during preprocessing. Check that your input is "
-                             "in English and contains valid characters.")
+                             "during preprocessing. If description was provided, " \
+                             "make sure it is a sensible sentence in English and "
+                             "contains valid characters.")
             else:
                 print("OK")
                 bert_path = ('models/tuned_bert_model')
