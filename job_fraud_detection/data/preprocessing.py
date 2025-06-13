@@ -5,12 +5,14 @@ from nltk.stem import WordNetLemmatizer
 from nltk.corpus import wordnet
 from nltk import pos_tag, word_tokenize
 
+import sys
+sys.path.append('.')
+
 from job_fraud_detection.data.general_preprocessing import (
                                    read_csv, read_user_input,
                                    preprocess_dataframe,
                                    remove_feature_name_row)
 
-import sys
 nltk.download("stopwords")
 
 nltk.download("wordnet")
@@ -19,8 +21,6 @@ nltk.download("omw-1.4")
 nltk.download("punkt")
 nltk.download("punkt_tab")
 nltk.download("averaged_perceptron_tagger_eng")
-
-sys.path.append('.')
 
 
 def remove_stopword(sentence: str) -> str:
