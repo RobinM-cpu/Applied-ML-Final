@@ -31,7 +31,7 @@ chosen_model = st.selectbox("Select a model", model_list)
 form = st.form("Input Data")
 
 # features that we list out for the user
-location_options = ['Missing'] + sorted([
+location_options = ['missing'] + sorted([
         'US', 'NZ', 'DE', 'GB', 'AU', 'SG', 'IL', 'AE', 'CA', 'IN',
         'EG', 'PL', 'GR', 'BE', 'BR', 'SA', 'DK', 'RU', 'ZA', 'CY', 'HK', 'TR',
         'IE', 'LT', 'JP', 'NL', 'AT', 'KR', 'FR', 'EE', 'TH', 'KE', 'MU', 'MX',
@@ -42,25 +42,25 @@ location_options = ['Missing'] + sorted([
         'CM', 'SV', 'PA', 'NI', 'LK', 'JM', 'KZ', 'KH'
     ])
 
-employment_options = ["Missing", "Full-time", "Part-time", "Contract",
+employment_options = ["missing", "Full-time", "Part-time", "Contract",
                       "Temporary", "Other"]
 
 required_experience_options = [
-        'Missing', 'Internship', 'Not Applicable', 'Mid-Senior level',
-        'Associate', 'Entry level', 'Executive', 'Director']
+        'missing', 'Internship', 'Mid-Senior level', 'Associate',
+        'Entry level', 'Executive', 'Director', 'Not Applicable']
 
 required_education_options = [
-        'Missing', "Bachelor's Degree", "Master's Degree",
-        'High School or equivalent', 'Unspecified',
+        'missing', "Bachelor's Degree", "Master's Degree",
+        'High School or equivalent',
         'Some College Coursework Completed', 'Vocational', 'Certification',
         'Associate Degree', 'Professional', 'Doctorate',
         'Some High School Coursework', 'Vocational - Degree',
-        'Vocational - HS Diploma']
+        'Vocational - HS Diploma', 'Unspecified']
 
 function_options = [
-        'Missing', 'Marketing', 'Customer Service', 'Sales',
+        'missing', 'Marketing', 'Customer Service', 'Sales',
         'Health Care Provider', 'Management', 'Information Technology',
-        'Other', 'Engineering', 'Administrative', 'Design', 'Production',
+        'Engineering', 'Administrative', 'Design', 'Production',
         'Education', 'Supply Chain', 'Business Development',
         'Product Management', 'Financial Analyst', 'Consulting',
         'Human Resources', 'Project Management', 'Manufacturing',
@@ -68,7 +68,7 @@ function_options = [
         'General Business', 'Research', 'Accounting/Auditing', 'Art/Creative',
         'Quality Assurance', 'Data Analyst', 'Business Analyst',
         'Writing/Editing', 'Distribution', 'Science', 'Training',
-        'Purchasing', 'Legal']
+        'Purchasing', 'Legal', 'Other']
 
 # insert data to make predictions on
 if chosen_model == "Logistic Regression":
@@ -344,8 +344,6 @@ if form.form_submit_button():
                 prediction = 0.5 * bert_prediction + (1.0 - 0.5) * probs_rf
                 st.write("Random Forest and Bert:")
                 st.write(probs_rf, bert_prediction)
-                st.write("Final Prediction Value:")
-                st.write(prediction)
 
             threshold = 0.4939
 
@@ -355,3 +353,4 @@ if form.form_submit_button():
                 st.write("Result: Fraudulent")
             else:
                 st.write("Result: Real")
+            st.markdown(f"Prediction score: `{float(prediction):.4f}` (threshold: `{threshold:.2f}`)")

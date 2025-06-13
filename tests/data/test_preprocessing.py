@@ -1,10 +1,10 @@
 import sys
 import os
-from job_fraud_detection.data.general_preprocessing import strip_html, \
-    non_latin_ratio, clean_and_mark, detect_desc_lang
-
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__),
                                              "..", "..")))
+
+from job_fraud_detection.data.general_preprocessing import strip_html, \
+    non_latin_ratio, clean_and_mark, detect_desc_lang
 
 
 def test_strip_html() -> None:

@@ -88,9 +88,7 @@ class ModelOutput(BaseModel):
 
 
 app = FastAPI(title="Applied Machine Learning - Group 34",
-              summary="Deployment of our AML Baseline Model: a Logistic "
-                      "Regression model trained on Real and Fake job-postings "
-                      "and TF-IDF features.")
+              summary="Deployment of our Model.")
 
 
 @app.get("/", description="Root endpoint that redirects to documentation.")
@@ -150,7 +148,7 @@ async def prediction(title: str = " ", description: str = " ",
         raise empty_data_error
 
     # load saved models #EDIIIIIIIIIIIIIIIIIIT
-    vectorizer = baseline.vectorizer_saver.load('vectorizer.pkl')
+    vectorizer = baseline.model_saver.load('vectorizer.pkl')
     # vectorize data into TF-IDF feature for prediction
     tfidf_processed_data = vectorizer.transform(processed_data)
     log_reg_model = baseline.model_saver.load('log_reg_model.pkl')

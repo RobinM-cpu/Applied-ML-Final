@@ -8,6 +8,6 @@ if __name__ == "__main__":
     print('Training Random Forest model...')
     rf.main(base_path="data/processed")
 
-    print('Training multimodality implementation of BERT...')
+    print('Results for the multimodality implementation of BERT...')
     multimodality.main(bert_path="models/tuned_bert_model",
                        rf_path="models/rf_model.pkl")
