@@ -31,7 +31,7 @@ chosen_model = st.selectbox("Select a model", model_list)
 form = st.form("Input Data")
 
 # features that we list out for the user
-location_options = ['missing'] + sorted([
+location_options = ['Missing'] + sorted([
         'US', 'NZ', 'DE', 'GB', 'AU', 'SG', 'IL', 'AE', 'CA', 'IN',
         'EG', 'PL', 'GR', 'BE', 'BR', 'SA', 'DK', 'RU', 'ZA', 'CY', 'HK', 'TR',
         'IE', 'LT', 'JP', 'NL', 'AT', 'KR', 'FR', 'EE', 'TH', 'KE', 'MU', 'MX',
@@ -42,15 +42,15 @@ location_options = ['missing'] + sorted([
         'CM', 'SV', 'PA', 'NI', 'LK', 'JM', 'KZ', 'KH'
     ])
 
-employment_options = ["missing", "Full-time", "Part-time", "Contract",
+employment_options = ["Missing", "Full-time", "Part-time", "Contract",
                       "Temporary", "Other"]
 
 required_experience_options = [
-        'missing', 'Internship', 'Not Applicable', 'Mid-Senior level',
+        'Missing', 'Internship', 'Not Applicable', 'Mid-Senior level',
         'Associate', 'Entry level', 'Executive', 'Director']
 
 required_education_options = [
-        'missing', "Bachelor's Degree", "Master's Degree",
+        'Missing', "Bachelor's Degree", "Master's Degree",
         'High School or equivalent', 'Unspecified',
         'Some College Coursework Completed', 'Vocational', 'Certification',
         'Associate Degree', 'Professional', 'Doctorate',
@@ -58,7 +58,7 @@ required_education_options = [
         'Vocational - HS Diploma']
 
 function_options = [
-        'missing', 'Marketing', 'Customer Service', 'Sales',
+        'Missing', 'Marketing', 'Customer Service', 'Sales',
         'Health Care Provider', 'Management', 'Information Technology',
         'Other', 'Engineering', 'Administrative', 'Design', 'Production',
         'Education', 'Supply Chain', 'Business Development',
@@ -224,7 +224,7 @@ if form.form_submit_button():
                          "Check that your input is in English and contains "
                          "valid characters.")
             else:
-                vectorizer = baseline.vectorizer_saver.load('vectorizer.pkl')
+                vectorizer = baseline.model_saver.load('vectorizer.pkl')
                 tfidf_processed_data = vectorizer.transform(processed_data)
                 log_reg_model = baseline.model_saver.load('log_reg_model.pkl')
                 prediction = baseline.predict(log_reg_model,
@@ -287,6 +287,7 @@ if form.form_submit_button():
             processed_rf = multimodal_preprocess.main(input_dict)
             processed_rf = processed_rf.replace(" ", "missing")
             processed_rf = processed_rf.replace("", "missing")
+            st.write("Processed Data:")
             st.write(processed_rf)
 
             if processed_data.empty:
@@ -325,6 +326,7 @@ if form.form_submit_button():
                 rf_model = rf_saver.load(name='rf_model.pkl')
                 enc = encoder_saver.load(name='ohe_encoder.pkl')
                 processed_rf = processed_rf.drop(columns=["text"])
+                st.write("Processed Data with Dropped Text Columns:")
                 st.write(processed_rf)
                 cat_columns = ["employment_type", "required_education",
                                "required_experience", "salary_category",
@@ -336,10 +338,13 @@ if form.form_submit_button():
                                           index=processed_rf.index)
                 X_train = pd.concat([processed_rf.drop(cat_columns, axis=1),
                                      one_hot_df], axis=1)
+                st.write("Training Data:")
                 st.write(X_train)
                 probs_rf = rf_model.predict_proba(X_train)[0, 1]
                 prediction = 0.5 * bert_prediction + (1.0 - 0.5) * probs_rf
+                st.write("Random Forest and Bert:")
                 st.write(probs_rf, bert_prediction)
+                st.write("Final Prediction Value:")
                 st.write(prediction)
 
             threshold = 0.4939

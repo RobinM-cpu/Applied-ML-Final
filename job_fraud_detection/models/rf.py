@@ -1,9 +1,9 @@
 import pandas as pd
 import os
 from sklearn.ensemble import RandomForestClassifier
-from job_fraud_detection.saver import Saver
 import sys
 sys.path.append('.')
+from job_fraud_detection.saver import Saver
 
 rf_saver = Saver()
 

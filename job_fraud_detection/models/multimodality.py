@@ -14,9 +14,9 @@ from sklearn.metrics import (
     roc_auc_score,
     f1_score
 )
-from job_fraud_detection.saver import Saver
 import sys
 sys.path.append('.')
+from job_fraud_detection.saver import Saver
 
 rf_loader = Saver()
 

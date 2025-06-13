@@ -4,11 +4,11 @@ from sklearn.preprocessing import OneHotEncoder
 from sklearn.model_selection import train_test_split
 from langdetect import DetectorFactory
 import json
+import sys
+sys.path.append('.')
 from job_fraud_detection.saver import Saver
 from job_fraud_detection.data.general_preprocessing import (
     read_csv, read_user_input, preprocess_dataframe, remove_feature_name_row)
-import sys
-sys.path.append('.')
 
 DetectorFactory.seed = 0
 

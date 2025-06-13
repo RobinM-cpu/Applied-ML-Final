@@ -14,9 +14,9 @@ from typing import Tuple
 import pandas as pd
 import os
 from scipy.sparse import spmatrix
-from job_fraud_detection.saver import Saver
 import sys
 sys.path.append('.')
+from job_fraud_detection.saver import Saver
 
 model_saver = Saver()
 

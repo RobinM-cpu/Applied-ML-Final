@@ -8,6 +8,8 @@
 
 Our repo:
 ```bash
+├───app # Streamlit application
+    └───pages # Streamlit pages
 ├───data  # Stores .csv
 ├───job_fraud_detection
 │   ├───data  # For data processing, not storing .csv

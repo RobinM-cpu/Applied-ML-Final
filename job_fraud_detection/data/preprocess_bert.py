@@ -4,10 +4,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.utils.class_weight import compute_class_weight
 from transformers import AutoTokenizer
 from langdetect import DetectorFactory
-from job_fraud_detection.data.general_preprocessing import (
-    read_csv, read_user_input, preprocess_dataframe, remove_feature_name_row)
 import sys
 sys.path.append('.')
+from job_fraud_detection.data.general_preprocessing import (
+    read_csv, read_user_input, preprocess_dataframe, remove_feature_name_row)
 
 DetectorFactory.seed = 0
 
