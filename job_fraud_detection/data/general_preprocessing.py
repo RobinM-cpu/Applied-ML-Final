@@ -9,7 +9,6 @@ import unicodedata
 def read_csv(input_path: str) -> pd.DataFrame:
     df = pd.read_csv(f"{input_path}/fake_job_postings.csv")
     df = df.replace(np.nan, "", regex=True)
-
     return df
 
 
@@ -17,14 +16,16 @@ def read_user_input(data: dict) -> pd.DataFrame:
     return pd.DataFrame([data])
 
 
-def detect_desc_lang(text):
+def detect_desc_lang(text: str) -> str:
+    # detects the language of the description
     try:
         return detect(text)
     except LangDetectException:
         return "unknown"
 
 
-def non_latin_ratio(text):
+def non_latin_ratio(text: str) -> float:
+    # returns the percentage of non-latin text
     if not isinstance(text, str):
         return 1.0
 
@@ -34,12 +35,13 @@ def non_latin_ratio(text):
 
     latin_count = sum(
         1 for c in text
-        if 'LATIN' in unicodedata.name(c, '') or c.isdigit() or c in " []()-_.:,"
-    )
+        if 'LATIN' in unicodedata.name(c, '') or c.isdigit()
+        or c in " []()-_.:,")
     return 1 - (latin_count / total)
 
 
-def strip_html(text):
+def strip_html(text: str) -> str:
+    # removes HTML tags and junk
     if not isinstance(text, str):
         return ""
     text = re.sub(r'<.*?>', '', text)
@@ -58,7 +60,8 @@ def strip_html(text):
     return text.strip()
 
 
-def clean_and_mark(row):
+def clean_and_mark(row: pd.Series) -> str:
+    # for BERT: combines and separates all possible long text variables
     return (
         f"[TITLE] {strip_html(row['title'])} "
         f"[DESC] {strip_html(row['description'])[:1000]} "
@@ -106,11 +109,11 @@ def preprocess_dataframe(df: pd.DataFrame, log_reg: bool = False
             + " "
             + df["function"]
         )
-        
+
         # decapitalize and replace
         df["text"] = df["text"].str.lower()
         df["text"] = df["text"].str.replace(r"[^\w\s]", " ", regex=True)
-    else:   
+    else:
         df['text'] = df.apply(clean_and_mark, axis=1)
 
     df['non_latin_ratio'] = df['text'].apply(non_latin_ratio)

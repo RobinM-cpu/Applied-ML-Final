@@ -8,6 +8,9 @@ def main():
     print("Running bert preprocessing")
     preprocess_bert.main("data/raw", "data/processed")
 
+    print("Running multimodality preprocessing")
+    preprocess_bert.main("data/raw", "data/processed")
+
     print("All preprocessing complete. Ready to train models")
 
 

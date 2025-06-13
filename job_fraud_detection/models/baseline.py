@@ -14,12 +14,11 @@ from typing import Tuple
 import pandas as pd
 import os
 from scipy.sparse import spmatrix
+from job_fraud_detection.saver import Saver
 import sys
 sys.path.append('.')
-from job_fraud_detection.saver import Saver
 
 model_saver = Saver()
-vectorizer_saver = Saver()
 
 
 def data_splitting(df: pd.DataFrame) -> Tuple[pd.DataFrame]:
@@ -83,9 +82,9 @@ def validation_set_metrics(model: type[LogisticRegression],
 
 
 def test_set_metrics(model: type[LogisticRegression],
-                    y_test: pd.DataFrame,
-                    y_test_pred: np.ndarray,
-                    test_tfidf: spmatrix) -> None:
+                     y_test: pd.DataFrame,
+                     y_test_pred: np.ndarray,
+                     test_tfidf: spmatrix) -> None:
     y_test_pred = model.predict(test_tfidf)
     print("\nTest Set Performance")
     print(classification_report(y_test, y_test_pred))
@@ -99,8 +98,7 @@ def test_set_metrics(model: type[LogisticRegression],
     print(f"AUC (Test): {test_auc:.4f}")
 
 
-def main(df_user_input: pd.DataFrame=None, user_input: bool=False,
-         return_metrics: bool=True):
+def main():
     df = pd.read_csv(
         os.path.join(
             os.path.dirname(__file__),
@@ -128,7 +126,7 @@ def main(df_user_input: pd.DataFrame=None, user_input: bool=False,
     test_set_metrics(model, y_test, y_test_pred, test_tfidf)
 
     model_saver.save(model, 'log_reg_model.pkl')
-    vectorizer_saver.save(vectorizer, 'vectorizer.pkl')
+    model_saver.save(vectorizer, 'vectorizer.pkl')
 
 
 if __name__ == "__main__":

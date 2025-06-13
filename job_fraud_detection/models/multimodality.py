@@ -1,8 +1,6 @@
-import os
 import numpy as np
 import pandas as pd
 import tensorflow as tf
-import joblib
 import matplotlib.pyplot as plt
 
 from transformers import (
@@ -16,17 +14,23 @@ from sklearn.metrics import (
     roc_auc_score,
     f1_score
 )
-from rf import rf_saver
+from job_fraud_detection.saver import Saver
+import sys
+sys.path.append('.')
+
+rf_loader = Saver()
 
 
 def main(bert_path, rf_path):
 
+    # Imports trained BERT and its tokenizer
     tokenizer = AutoTokenizer.from_pretrained(bert_path)
     bert_model = TFAutoModelForSequenceClassification.from_pretrained(
         bert_path
     )
 
-    rf_model = rf_saver.load(name='rf_model.pkl')
+    rf_model = rf_loader.load(name='rf_model.pkl')
+
     def preprocess_for_bert(examples):
         return tokenizer(
             examples["text"],
@@ -35,7 +39,7 @@ def main(bert_path, rf_path):
             max_length=512
         )
 
-    #BERT validation
+    # BERT validation
     bert_val_df = pd.read_csv("data/processed/val_bert.csv")
     bert_val_ds = Dataset.from_pandas(bert_val_df)
 
@@ -50,11 +54,13 @@ def main(bert_path, rf_path):
     val_probs_bert = tf.nn.softmax(val_logits, axis=1).numpy()[:, 1]
     y_val = bert_val_df["label"].values
 
-    precision_b, recall_b, thresholds_b = precision_recall_curve(y_val, val_probs_bert)
+    (precision_b, recall_b,
+     thresholds_b) = precision_recall_curve(y_val, val_probs_bert)
     f1_scores_b = 2 * precision_b * recall_b / (precision_b + recall_b + 1e-9)
     best_idx_b = np.argmax(f1_scores_b)
     best_thresh_bert_val = thresholds_b[best_idx_b]
-    print(f"VAL: Best BERT threshold = {best_thresh_bert_val:.4f} (F1 = {f1_scores_b[best_idx_b]:.4f})")
+    print(f"VAL: Best BERT threshold = {best_thresh_bert_val:.4f} "
+          f"(F1 = {f1_scores_b[best_idx_b]:.4f})")
 
     # Random forest validation
     X_val = pd.read_csv("data/processed/X_val.csv")
@@ -68,24 +74,27 @@ def main(bert_path, rf_path):
     print("Length of y_val:", len(y_val))
     print("Length of y_val_rf:", len(y_val_rf))
 
-    # 2. Get mismatch indices
+    # get mismatch indices
     mismatch_indices = np.where(y_val != y_val_rf)[0]
 
     print(f"Total mismatches: {len(mismatch_indices)}")
 
-    #check everything is the same
+    # check everything is the same
     if not np.array_equal(y_val, y_val_rf):
         raise ValueError("Validation labels for BERT and RF do not match.")
 
     val_probs_rf = rf_model.predict_proba(X_val)[:, 1]
 
-    precision_rf, recall_rf, thresholds_rf = precision_recall_curve(y_val, val_probs_rf)
-    f1_scores_rf = 2 * precision_rf * recall_rf / (precision_rf + recall_rf + 1e-9)
+    (precision_rf, recall_rf,
+     thresholds_rf) = precision_recall_curve(y_val, val_probs_rf)
+    f1_scores_rf = 2 * precision_rf * recall_rf / (
+        precision_rf + recall_rf + 1e-9)
     best_idx_rf = np.argmax(f1_scores_rf)
     best_thresh_rf_val = thresholds_rf[best_idx_rf]
-    print(f"VAL: Best RF threshold = {best_thresh_rf_val:.4f} (F1 = {f1_scores_rf[best_idx_rf]:.4f})")
+    print(f"VAL: Best RF threshold = {best_thresh_rf_val:.4f} "
+          f"(F1 = {f1_scores_rf[best_idx_rf]:.4f})")
 
-    # Grid search
+    # Grid search for best alpha
     alphas = np.arange(0.0, 1.01, 0.1)
     best_alpha = None
     best_thresh_fusion_val = None
@@ -93,8 +102,10 @@ def main(bert_path, rf_path):
 
     for value in alphas:
         fused_probs_val = value * val_probs_bert + (1.0 - value) * val_probs_rf
-        precision_f, recall_f, thresholds_f = precision_recall_curve(y_val, fused_probs_val)
-        f1_scores_f = 2 * precision_f * recall_f / (precision_f + recall_f + 1e-9)
+        precision_f, recall_f, thresholds_f = precision_recall_curve(
+            y_val, fused_probs_val)
+        f1_scores_f = 2 * precision_f * recall_f / (
+            precision_f + recall_f + 1e-9)
 
         idx_best_f = np.argmax(f1_scores_f)
         f1_f_val = f1_scores_f[idx_best_f]
@@ -108,8 +119,10 @@ def main(bert_path, rf_path):
         f"fusion threshold = {best_thresh_fusion_val:.4f} "
         f"(F1 = {best_f1_fusion_val:.4f})")
 
+    # Prints the precision-recall graph
     plt.figure(figsize=(8, 6))
-    plt.plot(recall_f, precision_f, label=f'Fusion (F1={best_f1_fusion_val:.4f})')
+    plt.plot(recall_f, precision_f,
+             label=f'Fusion (F1={best_f1_fusion_val:.4f})')
 
     plt.xlabel('Recall')
     plt.ylabel('Precision')
@@ -119,7 +132,7 @@ def main(bert_path, rf_path):
     plt.tight_layout()
     plt.show()
 
-   #TEST SET
+    # TEST SET
     bert_test_df = pd.read_csv("data/processed/test_bert.csv")
     bert_test_ds = Dataset.from_pandas(bert_test_df)
 
@@ -153,7 +166,7 @@ def main(bert_path, rf_path):
     print(f"Test AUC (BERT): {roc_auc_score(y_test, test_probs_bert):.4f}")
     print(f"Test F1 (BERT): {f1_score(y_test, y_pred_bert_test):.4f}")
 
-    #RF results
+    # RF results
     y_pred_rf_test = (test_probs_rf >= best_thresh_rf_val).astype(int)
     print("\n----- RF results -----")
     print(f"Applied threshold (from VAL): {best_thresh_rf_val:.4f}")
@@ -161,9 +174,11 @@ def main(bert_path, rf_path):
     print(f"Test AUC (RF): {roc_auc_score(y_test, test_probs_rf):.4f}")
     print(f"Test F1 (RF): {f1_score(y_test, y_pred_rf_test):.4f}")
 
-    #Fusion results
-    fused_probs_test = best_alpha * test_probs_bert + (1.0 - best_alpha) * test_probs_rf
-    y_pred_fusion_test = (fused_probs_test >= best_thresh_fusion_val).astype(int)
+    # Fusion results
+    fused_probs_test = (best_alpha * test_probs_bert +
+                        (1.0 - best_alpha) * test_probs_rf)
+    y_pred_fusion_test = (
+        fused_probs_test >= best_thresh_fusion_val).astype(int)
 
     print("\n-----Fusion results-----")
     print(f"Applied alpha (from VAL): {best_alpha:.1f}")

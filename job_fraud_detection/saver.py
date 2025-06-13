@@ -1,10 +1,11 @@
 import os
 import pickle
+from typing import Any
 
 
 class Saver:
     """
-    This is a class for serializing objects into JSON.
+    This is a class for serializing objects into pickle.
     """
     save_directory = os.path.join(os.path.dirname(__file__), '..',
                                   'models')
@@ -18,12 +19,13 @@ class Saver:
         if not os.path.isdir(self.save_directory):
             os.makedirs(self.save_directory)
 
-    def save(self, model, name) -> None:
+    def save(self, model: Any, name: str) -> None:
         """
         Saves a dictionary into a pickle file.
 
         Args:
             model: Trained model.
+            name: Name under which we want to save our file.
         """
         self.save_file = name
         try:
@@ -33,9 +35,9 @@ class Saver:
         except Exception as e:
             print(f"Model was not saved. {str(e)}.")
 
-    def load(self, name=None) -> None:
+    def load(self, name: str = None) -> None:
         """
-        Unpacks a pickle file.
+        Loads a pickle file.
         """
         try:
             if name:

@@ -1,33 +1,36 @@
 import pandas as pd
 import nltk
-import sys
-sys.path.append('.')
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from nltk.corpus import wordnet
+from nltk import pos_tag, word_tokenize
+
 from job_fraud_detection.data.general_preprocessing import (
                                    read_csv, read_user_input,
                                    preprocess_dataframe,
                                    remove_feature_name_row)
 
+import sys
 nltk.download("stopwords")
-from nltk.corpus import stopwords
-from nltk.stem import WordNetLemmatizer
 
 nltk.download("wordnet")
 nltk.download("omw-1.4")
-from nltk.corpus import wordnet
-from nltk import pos_tag, word_tokenize
 
 nltk.download("punkt")
 nltk.download("punkt_tab")
 nltk.download("averaged_perceptron_tagger_eng")
 
+sys.path.append('.')
+
 
 def remove_stopword(sentence: str) -> str:
     stop_words = set(stopwords.words("english"))
     words = sentence.split()
-    filtered = [word for word in words if word not in stop_words and word.isalnum()]
+    filtered = [word for word in words if word not in stop_words
+                and word.isalnum()]
     return " ".join(filtered)
 
-  
+
 def get_wordnet_pos(tag: str) -> str:
     if tag.startswith("J"):
         return wordnet.ADJ
@@ -38,14 +41,15 @@ def get_wordnet_pos(tag: str) -> str:
     elif tag.startswith("R"):
         return wordnet.ADV
     else:
-        return wordnet.NOUN  
+        return wordnet.NOUN
 
- 
+
 def lemmatizer(sentence: str) -> str:
     wnl = WordNetLemmatizer()
     words = word_tokenize(sentence)
     pos_tags = pos_tag(words)
-    filtered = [wnl.lemmatize(word, get_wordnet_pos(tag)) for word, tag in pos_tags]
+    filtered = [wnl.lemmatize(word, get_wordnet_pos(tag))
+                for word, tag in pos_tags]
     return " ".join(filtered)
 
 

@@ -5,14 +5,6 @@ import pandas as pd
 import tensorflow as tf
 import random
 
-SEED = 1
-os.environ["PYTHONHASHSEED"] = str(SEED)
-random.seed(SEED)
-np.random.seed(SEED)
-tf.random.set_seed(SEED)
-tf.keras.utils.set_random_seed(SEED)
-tf.config.experimental.enable_op_determinism()
-
 from transformers import (
     AutoTokenizer,
     TFAutoModelForSequenceClassification,
@@ -22,24 +14,35 @@ from transformers import (
 from sklearn.utils.class_weight import compute_class_weight
 from sklearn.metrics import roc_auc_score, precision_score, recall_score
 from sklearn.metrics import precision_recall_curve
+from optuna.trial import Trial
 from datasets import Dataset
+
+SEED = 1
+os.environ["PYTHONHASHSEED"] = str(SEED)
+random.seed(SEED)
+np.random.seed(SEED)
+tf.random.set_seed(SEED)
+tf.keras.utils.set_random_seed(SEED)
+tf.config.experimental.enable_op_determinism()
+
 
 id2label = {0: "REAL", 1: "FRAUD"}
 label2id = {"REAL": 0, "FRAUD": 1}
 tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
 
 
-def get_class_weights(labels):
+def get_class_weights(labels: pd.Series) -> dict:
     classes = np.unique(labels)
     weights = compute_class_weight(class_weight="balanced", classes=classes,
                                    y=labels)
     return dict(zip(classes, weights))
 
 
+# sets a global variable for calculating the F1 score during optimization
 best_f1_so_far = -1.0
 
 
-def objective(trial):
+def objective(trial: Trial) -> float:
     global best_f1_so_far
 
     train_df = pd.read_csv(
@@ -66,6 +69,7 @@ def objective(trial):
     train_ds = Dataset.from_pandas(train_df)
     val_ds = Dataset.from_pandas(val_df)
 
+    # all of the hyperparameters
     max_length = 512
     learning_rate = trial.suggest_float("lr", 2e-5, 3e-5, log=True)
     batch_size = trial.suggest_categorical("batch_size", [8, 16])
@@ -74,7 +78,7 @@ def objective(trial):
     warmup_proportion = trial.suggest_float("warmup_proportion", 0.08, 0.15)
     dropout_rate = trial.suggest_float("dropout_rate", 0.08, 0.2)
 
-    def preprocess_function(examples):
+    def preprocess_function(examples: dict) -> dict:
         return tokenizer(
             examples["text"], truncation=True, padding=True,
             max_length=max_length)
@@ -164,7 +168,7 @@ def objective(trial):
     return best_f1
 
 
-def save_trials(study, trial):
+def save_trials(study: optuna.Study, trial: Trial) -> None:
 
     all_trials = [
         {
@@ -185,11 +189,12 @@ def save_trials(study, trial):
     all_df.to_csv(csv_path, index=False)
 
 
-def main():
+def main() -> None:
     study = optuna.create_study(direction="maximize")
     study.optimize(objective, n_trials=100, callbacks=[save_trials])
 
-    top_trials = study.trials_dataframe().sort_values("value", ascending=False).head(10)
+    top_trials = study.trials_dataframe().sort_values(
+        "value", ascending=False).head(10)
     print("\nTop 10 Trials:")
     print(top_trials)
 
